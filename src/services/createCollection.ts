@@ -10,75 +10,62 @@ export const deployCollection = async (
   res: Response
 ): Promise<any>  => {
   try{ 
-    const lbalance = await getNativeBalance( process.env.WALLET_ADDRESS );
+    const lbalance = await getNativeBalance(process.env.WALLET_ADDRESS);
     if (lbalance.p > 0) {  
       return res.status(400).send({ error: "La wallet se ha quedado sin gas..." });      
     }
    
-    const  metadata  = req.body; // TODO: userId, email 
-    //console.log("metadata: ",metadata);  
-    const isAdmin = await getUserAdmin(metadata.email);
+    const  { metadata, email }  = req.body;
+    console.log("metadata: ", metadata);  
+    const isAdmin = await getUserAdmin(email);
     //console.log("Data Admin: ",isAdmin);  
     if(isAdmin === null ){
       return res.status(404).send({ error: "Admin is required" });
     }
-    if (!metadata.metadata) {   
+    if (!metadata) {   
       return res.status(404).send({ error: "metadata is required" });
     } 
    
-
-    // //ipfs upload 
-    // const headers = {
-    //   'Content-Type': 'multipart/form-data',
-    //   'X-API-KEY': process.env.API_TATUM,
-    // };
-    // const formData = new FormData();  
-    // const mystr = string2fileStream(metadata.metadata);
-    // formData.append("file", mystr);   
-    // const response = await axios.post('https://api.tatum.io/v3/ipfs', formData, { headers });
-    // console.log(response.data);
-    // //termina ipfs 
-   
-  
     const headers = {
       'Content-Type': 'application/json',
       'X-API-KEY': process.env.API_TATUM,
     };
     const data = {
       chain: process.env.CHAIN,
-      name:  metadata.metadata.name,
-      symbol: metadata.metadata.symbol,
+      name:  metadata.name,
+      symbol: metadata.symbol,
       fromPrivateKey :  process.env.WALLET_PK,
       publicMint : true
     }; 
 
-//    const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
+    const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
+     
+    let mitxhash = response.data.txId; // 0x69b3dc0c622d1f53f36c6ff0d0c6bae94dcb6050d928e09e2643b2f825874d
     
-    let txdata = await gettxHash(1,35); 
-    //console.log("txdata: " , txdata[0].data);
-    let mitxhash =  txdata[0].data.txId; 
-    //let mitxhash = response.data.txId;  
-    //obtengo el contrato deployado  
-    const getContract = await axios.get('https://api.tatum.io/v3/blockchain/sc/address/'+ process.env.CHAIN + '/' + mitxhash, { headers });
-    
-    //le doy permiso de mint a la wallet 
-    const dataAddMint = {
-      chain: process.env.CHAIN,
-      contractAddress:  getContract.data.contractAddress,
-      minter: process.env.WALLET_ADDRESS, 
-      fromPrivateKey :  process.env.WALLET_PK
-    };
-    const responseAddMinter = await axios.post('https://api.tatum.io/v3/nft/mint/add', dataAddMint, { headers });
-    console.log("responseAddMinter", responseAddMinter);
-    //guardamos data en la db
-    const dbResult = true ;// await createCollection(metadata, isAdmin, response.data, getContract);
+    if(mitxhash) {
+      //obtengo el contrato deployado
+      const getContract = await axios.get(`https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}`, { headers });
+       //le doy permiso de mint a la wallet 
+      const dataAddMint = {
+        chain: process.env.CHAIN,
+        contractAddress: getContract.data.contractAddress,
+        minter: process.env.WALLET_ADDRESS, 
+        fromPrivateKey :  process.env.WALLET_PK
+      };
+
+      const responseAddMinter = await axios.post('https://api.tatum.io/v3/nft/mint/add', dataAddMint, { headers });
+      console.log("responseAddMinter", responseAddMinter);
+
+       //guardamos data en la db
+      const dbResult = await createCollection(metadata, isAdmin, Number(process.env.WALLET_ADDRESS), getContract.data.contractAddress);
  
-    //if (dbResult || response ) {
-    if (dbResult  ) {
-      res
-        .status(200)
-        .send({ status: "success" });
-        //.send({ status: "success", data: response.data });
+      if (dbResult) {
+        res
+          .status(200)
+          .send({ status: "Collection created successfully", contract: getContract.data.contractAddress });
+      }
+    } else {
+      return res.status(500).send({ error: "Error deploying contract"})
     }
     
   } catch (error) {
@@ -86,5 +73,3 @@ export const deployCollection = async (
     res.status(500).send({ status: "error:", error: error.message });
   }
 };
-
- 

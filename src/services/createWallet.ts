@@ -21,7 +21,8 @@ export const createWallet = async (
     }
  
     //verifica que el usuario no existe, si existe regresa error 
-    const existe = await getUser(req.body.email);    
+    const existe = await getUser(req.body.email);  
+      
     if (existe){
       return res.json({
         status: 500,

@@ -24,8 +24,6 @@ export const adminAuth = async (
         const token = createToken(user);
         user.password = undefined;
 
-        
-
         res.status(200).json({ status: "success", jwt: token });
       } else {
         res
