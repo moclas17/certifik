@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Request, Response } from "express";
-import { createCollection, getUserAdmin, gettxHash } from "../utils/querys";
+import { createCollection, getUserAdmin } from "../utils/querys";
 import { getNativeBalance } from "../utils/web3utils";
 import dotenv from "dotenv";
 dotenv.config();
@@ -57,7 +57,7 @@ export const deployCollection = async (
       console.log("responseAddMinter", responseAddMinter);
 
        //guardamos data en la db
-      const dbResult = await createCollection(metadata, isAdmin, Number(process.env.WALLET_ADDRESS), getContract.data.contractAddress);
+      const dbResult = await createCollection(metadata, isAdmin, process.env.WALLET_ADDRESS, getContract.data.contractAddress);
  
       if (dbResult) {
         res

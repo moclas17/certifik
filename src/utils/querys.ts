@@ -42,30 +42,17 @@ export const getQRHash = async (hash: string): Promise<any> => {
 export const getCollections = async (adminId: number): Promise<any> => {
   const { data, error } = await supabase.from("collections").select();
   console.log({ data, error });
-  // return error ? error : data;
-  return [];
+  return error ? null : data;
 };
 
 export const getCollection = async (
-  adminId: number,
   collectionId: number
 ): Promise<any> => {
-  const { data, error } = await supabase.from("collections").select();
-  console.log({ data, error });
-  // return error ? error : data;
-  return [];
+  const { data, error } = await supabase.from("collections").select().eq("id", collectionId);;
+  return error ? null : data;
 };
 
-export const gettxHash = async (
-  adminId: number,
-  collectionId: number
-): Promise<any> => {
-  const { data, error } = await supabase.from("collections").select().eq("id", collectionId);
-   return error ? error : data;
-  
-};
-
-export const createCollection = async (metadata: MetadataProps, admin: AdminProps, minter: number, contract: string): Promise<any> => {
+export const createCollection = async (metadata: MetadataProps, admin: AdminProps, minter: any, contract: string): Promise<any> => {
  
   const { name, image, maxSupply } = metadata;
   const { id } = admin;
@@ -83,10 +70,18 @@ export const claimedNFT = async (
 ): Promise<any> => {
   const { data, error } = await supabase
     .from("qrcodes")
-    .update({ isClaimed: true, claimed_by: wallet }) 
+    .update({ isClaimed: true, owner: wallet }) 
     .match({ hash });
   return error ? error : data;
 };
+
+export const updateClaimedSupply = async (supply: number, contract: string) => {
+  const { error } = await supabase
+  .from("collections")
+  .update({ nfts_claimed: supply})
+  .match({ contract })
+  return error;
+}
 
 export const getUserNft = async (email: string): Promise<any> => {
   const user = await getUser(email);
