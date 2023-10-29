@@ -28,8 +28,9 @@ router.post("/create-collection", verifyToken, deployCollection);
 /* router.get(
   "/admin-collections/:adminId/collection/:collectionId",
   getAdminCollection
-); */
+); 
 router.post("/mint-batch", verifyToken, mintBatch);
+*/
 router.post("/claim", claimNFT);
 router.get("/nfts", getNFT);
 // router.get("/nfts/:id", getUserNft);
