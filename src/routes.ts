@@ -28,6 +28,6 @@ router.get(
   "/admin-collections/:adminId/collection/:collectionId",
   getAdminCollection
 );
-router.get("/claim", claimNFT);
-router.get("/nfts", getNFT);
+router.post("/claim", claimNFT);
+router.post("/nfts", getNFT);
 // router.get("/nfts/:id", getUserNft);
