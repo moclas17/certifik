@@ -9,7 +9,6 @@ import {
 } from "./services/getCollections";
 import { claimNFT } from "./services/claimNFT";
 import { getNFT } from "./services/getNFT";
-import { mintBatch } from "./services/mintBatch";
 
 import { verifyToken } from "./utils/validateToken";
 
@@ -24,13 +23,11 @@ router.post("/login", adminAuth);
 router.post("/create-collection", verifyToken, deployCollection);
 // router.post("/transfer-nft", transferNft); // El usuario lo solicita
 
-// router.get("/admin-collections/:id", getAdminCollections);
-/* router.get(
+router.get("/admin-collections/:id", getAdminCollections);
+router.get(
   "/admin-collections/:adminId/collection/:collectionId",
   getAdminCollection
-); 
-router.post("/mint-batch", verifyToken, mintBatch);
-*/
+);
 router.post("/claim", claimNFT);
-router.get("/nfts", getNFT);
+router.post("/nfts", getNFT);
 // router.get("/nfts/:id", getUserNft);

@@ -85,12 +85,17 @@ export const updateClaimedSupply = async (supply: number, contract: string) => {
 
 export const getUserNft = async (email: string): Promise<any> => {
   const user = await getUser(email);
+  user.wallet = "0x1c663755c0b6A1477fDc8a383928a5806398f6C8"; // Hard coded as an example
   if (user.wallet) {
     const { data, error } = await supabase
-      .from("qrcodes")
+      .from("NFT")
       .select()
-      .eq("claimed_by", user.wallet);
-    return error ? error : data;
+      .eq("Owner", user.wallet);
+      
+      if (Array.isArray(data) && data.length === 0) {
+        return { message: "Data is an empty array"};
+      }
+    return error ? error : { "data": data};
   }
-  return null;
+  return { message: "User wallet not found" };
 };
