@@ -19,15 +19,14 @@ export const getAdminCollection = async (
   req: Request,
   res: Response
 ): Promise<any> => {
-  const { adminId, collectionId } = req.params;
+  const { collectionId } = req.params;
   try {
-    if (!adminId || !collectionId) {
+    if (!collectionId) {
       res
         .status(404)
-        .send({ error: "admin id and collection id are required" });
+        .send({ error: "collection id is required" });
     }
     const collection = await getCollection(
-      Number(adminId),
       Number(collectionId)
     );
 
