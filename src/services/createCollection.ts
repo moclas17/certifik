@@ -17,13 +17,15 @@ export const deployCollection = async (
    
     const  { metadata, email }  = req.body;
     console.log("metadata: ", metadata);  
+    // create collection request no tiene el mail, q se necesita para seguir... hay que enviarlo manual con el request.
+
     const isAdmin = await getUserAdmin(email);
-    //console.log("Data Admin: ",isAdmin);  
+    // console.log("Data Admin: ", isAdmin);  
     if(isAdmin === null ){
       return res.status(404).send({ error: "Admin is required" });
     }
     if (!metadata) {   
-      return res.status(404).send({ error: "metadata is required" });
+      return res.status(404).send({ error: "Metadata is required" });
     } 
    
     const headers = {
@@ -41,10 +43,19 @@ export const deployCollection = async (
     const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
      
     let mitxhash = response.data.txId; // 0x69b3dc0c622d1f53f36c6ff0d0c6bae94dcb6050d928e09e2643b2f825874d
+
+    console.log("----- mitxhash");
+    console.log(mitxhash);
+    console.log("---- mitxhash");
+
+    let params = "";
+    if (process.env.TATUM_TESTNET == "True") {
+      params = "?type=testnet";
+    }
     
     if(mitxhash) {
       //obtengo el contrato deployado
-      const getContract = await axios.get(`https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}`, { headers });
+      const getContract = await axios.get(`https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}${params}`, { headers });
        //le doy permiso de mint a la wallet 
       const dataAddMint = {
         chain: process.env.CHAIN,
@@ -59,6 +70,7 @@ export const deployCollection = async (
        //guardamos data en la db
       const dbResult = await createCollection(metadata, isAdmin, process.env.WALLET_ADDRESS, getContract.data.contractAddress);
  
+
       if (dbResult) {
         res
           .status(200)

@@ -23,10 +23,11 @@ export const getUser = async (email: string): Promise<any> => {
 
 export const getUserAdmin = async (email: string): Promise<any> => {
   const { data, error } = await supabase
-    .from("Admin")
+    .from("admin")
     .select()
     .eq("email", email)
     .maybeSingle();
+    
   return error ? null : data;
 };
 
@@ -48,7 +49,7 @@ export const getCollections = async (adminId: number): Promise<any> => {
 export const getCollection = async (
   collectionId: number
 ): Promise<any> => {
-  const { data, error } = await supabase.from("collections").select().eq("id", collectionId);;
+  const { data, error } = await supabase.from("collections").select().eq("collection_id", collectionId);;
   return error ? null : data;
 };
 
@@ -58,7 +59,7 @@ export const createCollection = async (metadata: MetadataProps, admin: AdminProp
   const { id } = admin;
   const { data, error } = await supabase
     .from("collections")
-    .insert([{ 'adminOwner': id, 'name':name,  'supply': maxSupply, 'image': image, 'metadata': metadata, 'contract': contract, 'minter': minter }])
+    .insert([{ 'adminOwner': id, 'name':name,  'supply': maxSupply, 'image': image, 'metadata': metadata, 'collection_contract': contract, 'minter': minter }])
     .select();
    return error ? null : data;
   
@@ -88,9 +89,9 @@ export const getUserNft = async (email: string): Promise<any> => {
   user.wallet = "0x1c663755c0b6A1477fDc8a383928a5806398f6C8"; // Hard coded as an example
   if (user.wallet) {
     const { data, error } = await supabase
-      .from("NFT")
+      .from("nft")
       .select()
-      .eq("Owner", user.wallet);
+      .eq("owner", user.wallet);
       
       if (Array.isArray(data) && data.length === 0) {
         return { message: "Data is an empty array"};

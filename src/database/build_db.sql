@@ -21,7 +21,7 @@ CREATE TABLE Admin (
     Credits INT DEFAULT 0
 );
 
-CREATE TABLE Collection (
+CREATE TABLE Collections (
     Collection_ID INT PRIMARY KEY,
     Admin_ID INT,
     Collection_Name VARCHAR(255) NOT NULL,
@@ -29,6 +29,8 @@ CREATE TABLE Collection (
     Supply INT NOT NULL DEFAULT 0,
     Image TEXT,
     Metadata TEXT,
+    project_url TEXT,
+    collection_contract TEXT,
     FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID)
 );
 
@@ -41,4 +43,14 @@ CREATE TABLE NFT (
     Owner VARCHAR(255), -- Can be foreign key if needed.
     FOREIGN KEY (Collection_ID) REFERENCES Collection(Collection_ID),
     FOREIGN KEY (Owner) REFERENCES Users(Wallet_ID)
+);
+
+CREATE TABLE qrcodes (
+    id SERIAL PRIMARY KEY,
+    hash VARCHAR(255) UNIQUE,
+    bottleid VARCHAR(255) UNIQUE,
+    collection VARCHAR(255),
+    nfts_claimed INT,
+    isClaimed BOOLEAN,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

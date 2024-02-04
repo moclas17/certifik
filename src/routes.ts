@@ -23,11 +23,11 @@ router.post("/login", adminAuth);
 router.post("/create-collection", verifyToken, deployCollection);
 // router.post("/transfer-nft", transferNft); // El usuario lo solicita
 
-router.get("/admin-collections/:id", getAdminCollections);
-router.get(
-  "/admin-collections/:adminId/collection/:collectionId",
-  getAdminCollection
-);
+// router.get("/admin-collections/:id", getAdminCollections);
+// router.get(
+//   "/admin-collections/:adminId/collection/:collectionId",
+//   getAdminCollection
+// );
 router.post("/claim", claimNFT);
 router.post("/nfts", getNFT);
 // router.get("/nfts/:id", getUserNft);

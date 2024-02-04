@@ -35,8 +35,9 @@ export const createWallet = async (
     const { error } = await supabase.from("users").insert([
       {
         email: req.body.email,
-        wallet: account.address,
-        pk: account.privateKey,
+        public_key: account.address,
+        private_key: account.privateKey,
+        wallet_id: 10,
       },
     ]);
 
