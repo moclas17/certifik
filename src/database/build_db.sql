@@ -1,0 +1,56 @@
+/* LA INFORMACION SENSIBLE COMO LLAVES PRIVADAS O CONTRASENAS DEBERA ENCRIPTARSE */
+
+CREATE DATABASE daino_database;
+USE daino_database;
+-- SHOW tables;
+
+CREATE TABLE Users (
+    Wallet_ID VARCHAR(255) PRIMARY KEY,
+    Public_Key VARCHAR(255) NOT NULL,
+    Private_Key VARCHAR(255) NOT NULL, /* LA INFORMACION SENSIBLE COMO LLAVES PRIVADAS O CONTRASENAS DEBERA ENCRIPTARSE */
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    Username VARCHAR(255)    
+);
+
+-- DROP TABLE Collection;
+
+CREATE TABLE Admin (
+    Admin_ID INT PRIMARY KEY,
+    Email VARCHAR(255) UNIQUE NOT NULL,
+    Password VARCHAR(255) NOT NULL, /* LA INFORMACION SENSIBLE COMO LLAVES PRIVADAS O CONTRASENAS DEBERA ENCRIPTARSE */
+    Credits INT DEFAULT 0
+);
+
+CREATE TABLE Collections (
+    Collection_ID INT PRIMARY KEY,
+    Admin_ID INT,
+    Collection_Name VARCHAR(255) NOT NULL,
+    Chain_ID VARCHAR(255),
+    Supply INT NOT NULL DEFAULT 0,
+    Image TEXT,
+    Metadata TEXT,
+    project_url TEXT,
+    collection_contract TEXT,
+    FOREIGN KEY (Admin_ID) REFERENCES Admin(Admin_ID)
+);
+
+CREATE TABLE NFT (
+    ID INT PRIMARY KEY,
+    Collection_ID INT,
+    NFT_ID INT NOT NULL,
+    UUID VARCHAR(255) UNIQUE NOT NULL,
+    Claimed BOOLEAN DEFAULT FALSE,
+    Owner VARCHAR(255), -- Can be foreign key if needed.
+    FOREIGN KEY (Collection_ID) REFERENCES Collection(Collection_ID),
+    FOREIGN KEY (Owner) REFERENCES Users(Wallet_ID)
+);
+
+CREATE TABLE qrcodes (
+    id SERIAL PRIMARY KEY,
+    hash VARCHAR(255) UNIQUE,
+    bottleid VARCHAR(255) UNIQUE,
+    collection VARCHAR(255),
+    nfts_claimed INT,
+    isClaimed BOOLEAN,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

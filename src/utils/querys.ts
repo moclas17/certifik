@@ -1,23 +1,34 @@
 import supabase from "../config/supabase";
 
+interface MetadataProps {
+  name: string,
+  image: string,
+  maxSupply: number
+};
+
+interface AdminProps {
+  id: number,
+  email: string,
+  credits: number
+};
+
 export const getUser = async (email: string): Promise<any> => {
   const { data, error } = await supabase
     .from("users")
     .select()
     .eq("email", email)
     .maybeSingle();
-    //console.log("error: ",error);
-    //console.log("data: ",data);
-  return error ? error : data;
+  return error ? null : data;
 };
 
 export const getUserAdmin = async (email: string): Promise<any> => {
   const { data, error } = await supabase
-    .from("Admin")
+    .from("admin")
     .select()
     .eq("email", email)
     .maybeSingle();
-  return error ? error : data;
+    
+  return error ? null : data;
 };
 
 export const getQRHash = async (hash: string): Promise<any> => {
@@ -26,45 +37,31 @@ export const getQRHash = async (hash: string): Promise<any> => {
     .select()
     .eq("hash", hash)
     .maybeSingle();
-  return error ? error : data;
+  return error ? null : data;
 };
 
 export const getCollections = async (adminId: number): Promise<any> => {
   const { data, error } = await supabase.from("collections").select();
   console.log({ data, error });
-  // return error ? error : data;
-  return [];
+  return error ? null : data;
 };
 
 export const getCollection = async (
-  adminId: number,
   collectionId: number
 ): Promise<any> => {
-  const { data, error } = await supabase.from("collections").select();
-  console.log({ data, error });
-  // return error ? error : data;
-  return [];
+  const { data, error } = await supabase.from("collections").select().eq("collection_id", collectionId);;
+  return error ? null : data;
 };
 
-export const gettxHash = async (
-  adminId: number,
-  collectionId: number
-): Promise<any> => {
-  const { data, error } = await supabase.from("collections").select().eq("id", collectionId);
-   return error ? error : data;
-  
-};
-
-export const createCollection = async (metadataok: any, admin: any, result: any, contract: any): Promise<any> => {
+export const createCollection = async (metadata: MetadataProps, admin: AdminProps, minter: any, contract: string): Promise<any> => {
  
-  const { maxTickets, metadata } = metadataok;
-  const { name, image } = metadata;
+  const { name, image, maxSupply } = metadata;
   const { id } = admin;
   const { data, error } = await supabase
     .from("collections")
-    .insert([{ 'adminOwner': id, 'name':name,  'supply':maxTickets, 'image':image, 'metadata':metadata, 'data': result, 'contract':contract }])
+    .insert([{ 'adminOwner': id, 'name':name,  'supply': maxSupply, 'image': image, 'metadata': metadata, 'collection_contract': contract, 'minter': minter }])
     .select();
-   return error ? error : data;
+   return error ? null : data;
   
 };
  
@@ -74,19 +71,32 @@ export const claimedNFT = async (
 ): Promise<any> => {
   const { data, error } = await supabase
     .from("qrcodes")
-    .update({ isClaimed: true, claimed_by: wallet }) 
+    .update({ isClaimed: true, owner: wallet }) 
     .match({ hash });
   return error ? error : data;
 };
 
+export const updateClaimedSupply = async (supply: number, contract: string) => {
+  const { error } = await supabase
+  .from("collections")
+  .update({ nfts_claimed: supply})
+  .match({ contract })
+  return error;
+}
+
 export const getUserNft = async (email: string): Promise<any> => {
   const user = await getUser(email);
+  user.wallet = "0x1c663755c0b6A1477fDc8a383928a5806398f6C8"; // Hard coded as an example
   if (user.wallet) {
     const { data, error } = await supabase
-      .from("qrcodes")
+      .from("nft")
       .select()
-      .eq("claimed_by", user.wallet);
-    return error ? error : data;
+      .eq("owner", user.wallet);
+      
+      if (Array.isArray(data) && data.length === 0) {
+        return { message: "Data is an empty array"};
+      }
+    return error ? error : { "data": data};
   }
-  return null;
+  return { message: "User wallet not found" };
 };
