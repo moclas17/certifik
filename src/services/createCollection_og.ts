@@ -5,11 +5,6 @@ import { getNativeBalance } from "../utils/web3utils";
 import dotenv from "dotenv";
 dotenv.config();
 
-interface Metadata {
-  collection_name: string;
-  chain: 'ETH' | 'MATIC';
-}
-
 export const deployCollection = async ( 
   req: Request,
   res: Response
@@ -17,27 +12,24 @@ export const deployCollection = async (
   try{ 
     const lbalance = await getNativeBalance(process.env.WALLET_ADDRESS);
     if (lbalance.p > 0) {  
-      return res.status(400).send({ error: "La wallet se ha quedado sin gas..." });      
+      return res.status(400).send({ error: "Not enough gas in this wallet..." });      
     }
    
-    // create collection request no tiene el mail, q se necesita para seguir... hay que enviarlo manual con el request.
-    let  { metadata, email }  = req.body;
-
-    // Completamos la Metadata
-    metadata["name"] = metadata.collection_name;
+    // create collection request no tiene el mail, q se necesita para seguir... así q hay que enviarlo manual con el request.
+    const  { metadata, email }  = req.body;
     
     const isAdmin = await getUserAdmin(email);
     // console.log("Data Admin: ", isAdmin);  
     if(isAdmin === null ){
-      return res.status(404).send({ error: "Admin is required" });
+      return res.status(400).send({ error: "Admin status is required" });
     }
     if (!metadata) {   
-      return res.status(404).send({ error: "Metadata is required with: collection_name, chain, max_supply, image_url, symbol and description." });
+      return res.status(400).send({ error: "Metadata info is required" });
     } 
    
     const headers = {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.API_TATUM,
+      "Content-Type": "application/json",
+      'x-api-key': process.env.API_TATUM
     };
 
     const data = {
@@ -47,25 +39,57 @@ export const deployCollection = async (
       fromPrivateKey :  process.env.WALLET_PK,
       publicMint : true
     }; 
-    
-    // Bugged: With a real request, the getContract constant receives an undefined contract, can't seem to be fixed
-    // OG code is:
-    // const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
-    // let mitxhash = response.data.txId; // 0x2256c2174ca2248d76538dbe9430c780a32530c32c3fcf7b5b94a19878cdcd03
 
-    //Fix is:
-    let mitxhash = "0x2256c2174ca2248d76538dbe9430c780a32530c32c3fcf7b5b94a19878cdcd03"
+    const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
+     
+    let mitxhash = response.data.txId; // 0x2256c2174ca2248d76538dbe9430c780a32530c32c3fcf7b5b94a19878cdcd03
+    
+
+    console.log("---->");
+    console.log("mitxhash: ", mitxhash);
+    console.log("---->");
+
+    const headers_2 = {
+      'x-api-key': process.env.API_TATUM
+    };
 
     let params = "";
     if (process.env.TATUM_TESTNET == "True") {
-      params = "?type=testnet"; 
+      params = "?type=testnet";
     }
     
+    //obtengo el contrato deployado
     if(mitxhash) {
-      //obtengo el contrato deployado
       const request_url = `https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}${params}`;
+      
+      // Con Axios:
+      // const getContract = await axios.get(request_url, { headers });
 
-      const getContract = await axios.get(request_url, { headers });
+      // Con fetch:
+      const response = await fetch(request_url, {
+        method: 'GET',
+        headers: headers_2
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      console.log(response.headers.get('Content-Type')); // Should be application/json
+      console.log(response.headers.get('Content-Length')); // Should not be 0
+      const text = await response.text(); 
+      console.log(text); // See what the actual raw response text is
+
+      const getContract = await response.json();
+
+
+      console.log("---->");
+      console.log("response: ", response);
+      console.log("......");
+      console.log("request_url: ", request_url);
+      console.log("......");
+      console.log("getContract: ", getContract);
+      console.log("---->");
 
        //dar permiso de mint a la wallet 
       const dataAddMint = {
@@ -79,6 +103,7 @@ export const deployCollection = async (
 
        //guardamos data en la db
       const dbResult = await createCollection(metadata, isAdmin, process.env.WALLET_ADDRESS, getContract.data.contractAddress, 0);
+ 
 
       if (dbResult) {
         res
