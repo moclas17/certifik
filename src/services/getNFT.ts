@@ -13,7 +13,6 @@ export const getNFT = async (
 
   try {
     const nfts = await getUserNft(email);
-    console.log("NFTS ", nfts);
     res.status(200).json({ status: "success", nfts });
   } catch (error) {
     return next(error);

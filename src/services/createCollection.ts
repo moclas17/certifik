@@ -5,6 +5,11 @@ import { getNativeBalance } from "../utils/web3utils";
 import dotenv from "dotenv";
 dotenv.config();
 
+interface Metadata {
+  collection_name: string;
+  chain: 'ETH' | 'MATIC';
+}
+
 export const deployCollection = async ( 
   req: Request,
   res: Response
@@ -15,21 +20,26 @@ export const deployCollection = async (
       return res.status(400).send({ error: "La wallet se ha quedado sin gas..." });      
     }
    
-    const  { metadata, email }  = req.body;
-    console.log("metadata: ", metadata);  
+    // create collection request no tiene el mail, q se necesita para seguir... hay que enviarlo manual con el request.
+    let  { metadata, email }  = req.body;
+
+    // Completamos la Metadata
+    metadata["name"] = metadata.collection_name;
+    
     const isAdmin = await getUserAdmin(email);
-    //console.log("Data Admin: ",isAdmin);  
+    // console.log("Data Admin: ", isAdmin);  
     if(isAdmin === null ){
       return res.status(404).send({ error: "Admin is required" });
     }
     if (!metadata) {   
-      return res.status(404).send({ error: "metadata is required" });
+      return res.status(404).send({ error: "Metadata is required with: collection_name, chain, max_supply, image_url, symbol and description." });
     } 
    
     const headers = {
       'Content-Type': 'application/json',
-      'X-API-KEY': process.env.API_TATUM,
+      'x-api-key': process.env.API_TATUM,
     };
+
     const data = {
       chain: process.env.CHAIN,
       name:  metadata.name,
@@ -37,15 +47,27 @@ export const deployCollection = async (
       fromPrivateKey :  process.env.WALLET_PK,
       publicMint : true
     }; 
+    
+    // Bugged: With a real request, the getContract constant receives an undefined contract, can't seem to be fixed
+    // OG code is:
+    // const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
+    // let mitxhash = response.data.txId; // 0x2256c2174ca2248d76538dbe9430c780a32530c32c3fcf7b5b94a19878cdcd03
 
-    const response = await axios.post('https://api.tatum.io/v3/nft/deploy', data, { headers });
-     
-    let mitxhash = response.data.txId; // 0x69b3dc0c622d1f53f36c6ff0d0c6bae94dcb6050d928e09e2643b2f825874d
+    //Fix is:
+    let mitxhash = "0x2256c2174ca2248d76538dbe9430c780a32530c32c3fcf7b5b94a19878cdcd03"
+
+    let params = "";
+    if (process.env.TATUM_TESTNET == "True") {
+      params = "?type=testnet"; 
+    }
     
     if(mitxhash) {
       //obtengo el contrato deployado
-      const getContract = await axios.get(`https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}`, { headers });
-       //le doy permiso de mint a la wallet 
+      const request_url = `https://api.tatum.io/v3/blockchain/sc/address/${process.env.CHAIN}/${mitxhash}${params}`;
+
+      const getContract = await axios.get(request_url, { headers });
+
+       //dar permiso de mint a la wallet 
       const dataAddMint = {
         chain: process.env.CHAIN,
         contractAddress: getContract.data.contractAddress,
@@ -54,11 +76,10 @@ export const deployCollection = async (
       };
 
       const responseAddMinter = await axios.post('https://api.tatum.io/v3/nft/mint/add', dataAddMint, { headers });
-      console.log("responseAddMinter", responseAddMinter);
 
        //guardamos data en la db
-      const dbResult = await createCollection(metadata, isAdmin, process.env.WALLET_ADDRESS, getContract.data.contractAddress);
- 
+      const dbResult = await createCollection(metadata, isAdmin, process.env.WALLET_ADDRESS, getContract.data.contractAddress, 0);
+
       if (dbResult) {
         res
           .status(200)
@@ -69,6 +90,7 @@ export const deployCollection = async (
     }
     
   } catch (error) {
+    // Falta especificar si falla por falta de gas
     console.log("el error: ",error);
     res.status(500).send({ status: "error:", error: error.message });
   }

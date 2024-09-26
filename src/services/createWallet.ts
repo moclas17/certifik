@@ -21,7 +21,8 @@ export const createWallet = async (
     }
  
     //verifica que el usuario no existe, si existe regresa error 
-    const existe = await getUser(req.body.email);  
+    const existe = await getUser(req.body.email);
+
       
     if (existe){
       return res.json({
@@ -32,11 +33,15 @@ export const createWallet = async (
      
     const account = web3.eth.accounts.create();    
 
+    //altura de la tabla, sirve para poner el id del nuevo usuario
+    const { count: preInsertCount, error: preInsertError } = await supabase.from('users').select('*', { count: 'exact', head: true });
+
     const { error } = await supabase.from("users").insert([
       {
         email: req.body.email,
-        wallet: account.address,
-        pk: account.privateKey,
+        public_key: account.address,
+        private_key: account.privateKey,
+        wallet_id: preInsertCount,
       },
     ]);
 
